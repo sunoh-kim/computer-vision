@@ -1,0 +1,64 @@
+function [scores, bboxes, success] = get_candidates(img, w, b, scale)
+
+scores =[];
+bboxes = [];
+success = 0;
+
+img_h = size(img, 1);
+img_w = size(img, 2);
+
+% patch_h = 160;
+% patch_w = 96;
+patch_h = 96;
+patch_w = 32;
+
+if (img_w < patch_w || img_h < patch_h)
+    return;
+end
+
+% X = ['scale factor', num2str(scale)];
+% disp(X);
+
+success = 1;
+step = 8;
+
+hog_cell_size = 8;
+detector_hog_w = patch_w/hog_cell_size;
+detector_hog_h = patch_h/hog_cell_size;
+
+cur_confidences = [];
+cur_bboxes = [];
+scores = [];
+bboxes = [];
+
+hog = vl_hog(img, hog_cell_size);
+
+hog_h = size(hog, 1);
+hog_w = size(hog, 2);
+steps_x = hog_w - detector_hog_w + 1;
+steps_y = hog_h - detector_hog_h + 1;
+
+%% Sliding windows.
+for j = 1:steps_y
+    for k = 1:steps_x
+        
+        temp_hog = hog(j:j+detector_hog_h-1, k:k+detector_hog_w-1, :);
+
+        temp_score = w' * temp_hog(:) + b;
+        if (temp_score > 0.95 && temp_score )
+            cur_confidences = [cur_confidences;temp_score];
+            bbox = [(k-1)*hog_cell_size+1, (j-1)*hog_cell_size+1, (k-1)*hog_cell_size+1 + patch_w, (j-1)*hog_cell_size+1 + patch_h];
+            bbox = bbox ./ scale;
+            cur_bboxes = [cur_bboxes;bbox];
+        end
+    end
+end
+
+scores = cur_confidences;
+bboxes      = cur_bboxes;
+if(size(bboxes,1)==0)
+    success = 0;
+    return
+end
+end
+
